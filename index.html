@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>출근 기록</title>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/font-kopub@1.0/kopubdotum.min.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'KopubDotum', 'Apple SD Gothic Neo', 'Nanum Gothic', sans-serif;
+      background-color: #ffffff;
+      color: #333333;
+      min-height: 100vh;
+      padding: 0 20px 40px;
+      box-sizing: border-box;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 375px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+      position: relative;
+    }
+    header {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+    .hamburger {
+      font-size: 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #000000;
+    }
+    .menu {
+      display: none;
+      position: absolute;
+      top: 40px;
+      left: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      z-index: 10;
+      width: 200px;
+    }
+    .menu button {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 10px;
+      text-align: left;
+      width: 100%;
+      color: #000000;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 1.1rem;
+      color: #666666;
+      margin-bottom: 30px;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 16px 0;
+      width: 100%;
+      max-width: 280px;
+      user-select: none;
+      margin-top: 20px;
+    }
+    button:active:not(:disabled) {
+      background-color: #388e3c;
+    }
+    button:disabled {
+      background-color: #a5d6a7;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    input[type="text"] {
+      width: 100%;
+      max-width: 280px;
+      padding: 12px 15px;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      border: 1.5px solid #ccc;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+      outline-offset: 2px;
+      outline-color: transparent;
+      transition: outline-color 0.3s ease;
+    }
+    input[type="text"]:focus {
+      outline-color: #4CAF50;
+      border-color: #4CAF50;
+    }
+    #landingPage {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    #homePage, #recordPage {
+      display: none;
+    }
+    #timeRecord {
+      margin-top: 40px;
+      font-size: 1.1rem;
+      color: #4CAF50;
+      min-height: 1.5em;
+    }
+    .record-entry {
+      font-size: 1rem;
+      margin: 6px 0;
+    }
+    .back-button {
+      font-size: 1rem;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="landingPage" class="container">
+    <h1>출근 기록</h1>
+    <p>모두의 칼퇴를 기원합니다!</p>
+    <button id="startBtn">출근 기록 시작</button>
+  </div>
+
+  <div id="homePage" class="container">
+    <header>
+      <button class="hamburger" id="menuToggle">☰</button>
+      <div class="menu" id="menu">
+        <button id="viewRecordsBtn">📋 출근 기록 확인하기</button>
+      </div>
+    </header>
+    <h1>출근 기록</h1>
+    <input type="text" id="nicknameInput" placeholder="닉네임을 입력하세요" maxlength="20" />
+    <div id="timeRecord"></div>
+    <button id="workButton" disabled>출근하기</button>
+  </div>
+
+  <div id="recordPage" class="container">
+    <header>
+      <button class="back-button" onclick="goHome()">← 홈으로 돌아가기</button>
+    </header>
+    <h1>출근 기록 목록</h1>
+    <div id="recordList"></div>
+  </div>
+
+<script>
+  const landingPage = document.getElementById('landingPage');
+  const homePage = document.getElementById('homePage');
+  const recordPage = document.getElementById('recordPage');
+  const startBtn = document.getElementById('startBtn');
+  const nicknameInput = document.getElementById('nicknameInput');
+  const workButton = document.getElementById('workButton');
+  const timeRecord = document.getElementById('timeRecord');
+  const viewRecordsBtn = document.getElementById('viewRecordsBtn');
+  const recordList = document.getElementById('recordList');
+  const menuToggle = document.getElementById('menuToggle');
+  const menu = document.getElementById('menu');
+
+  // 오늘 날짜 문자열 (yyyy-mm-dd)
+  function getTodayString() {
+    const now = new Date();
+    return now.toISOString().slice(0,10);
+  }
+
+  // localStorage 키들
+  const STORAGE_RECORDS = 'workRecords';
+  const STORAGE_LASTDATE = 'lastRecordDate';
+
+  // 로컬에서 기록 불러오기
+  let records = JSON.parse(localStorage.getItem(STORAGE_RECORDS)) || [];
+  let lastRecordDate = localStorage.getItem(STORAGE_LASTDATE) || '';
+
+  // 날짜 체크해서 00:00 이후면 초기화
+  function checkAndResetDailyRecords() {
+    const today = getTodayString();
+    if (lastRecordDate !== today) {
+      records = [];
+      localStorage.setItem(STORAGE_RECORDS, JSON.stringify(records));
+      localStorage.setItem(STORAGE_LASTDATE, today);
+    }
+  }
+
+  function updateUIAfterRecord() {
+    const last = records[records.length-1];
+    if (last) {
+      timeRecord.textContent = `${last}`;
+      workButton.disabled = true;
+      nicknameInput.disabled = true;
+    } else {
+      timeRecord.textContent = '';
+      workButton.disabled = nicknameInput.value.trim() === '';
+      nicknameInput.disabled = false;
+    }
+  }
+
+  window.onload = () => {
+    landingPage.style.display = 'flex';
+    homePage.style.display = 'none';
+    recordPage.style.display = 'none';
+
+    checkAndResetDailyRecords();
+  };
+
+  startBtn.addEventListener('click', () => {
+    landingPage.style.display = 'none';
+    homePage.style.display = 'flex';
+    nicknameInput.value = '';
+    updateUIAfterRecord();
+  });
+
+  nicknameInput.addEventListener('input', () => {
+    if (!nicknameInput.disabled) {
+      workButton.disabled = nicknameInput.value.trim() === '';
+    }
+  });
+
+  workButton.addEventListener('click', () => {
+    const nickname = nicknameInput.value.trim();
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('ko-KR', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    const record = `${nickname}님 출근 시간: ${timeString}`;
+    records.push(record);
+    localStorage.setItem(STORAGE_RECORDS, JSON.stringify(records));
+    localStorage.setItem(STORAGE_LASTDATE, getTodayString());
+
+    updateUIAfterRecord();
+  });
+
+  menuToggle.addEventListener('click', () => {
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  });
+
+  viewRecordsBtn.addEventListener('click', () => {
+    homePage.style.display = 'none';
+    recordPage.style.display = 'flex';
+    menu.style.display = 'none';
+    renderRecords();
+  });
+
+  function renderRecords() {
+    recordList.innerHTML = '';
+    // 기록을 오래된 순서대로 보여주기
+    records.forEach(entry => {
+      const div = document.createElement('div');
+      div.className = 'record-entry';
+      div.textContent = entry;
+      recordList.appendChild(div);
+    });
+  }
+
+  function goHome() {
+    recordPage.style.display = 'none';
+    homePage.style.display = 'flex';
+  }
+</script>
+</body>
+</html>
